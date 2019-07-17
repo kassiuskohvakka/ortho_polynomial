@@ -218,7 +218,7 @@ for i, coeff in enumerate(coeffs):
 mpl_settings(12,12)
 
 #f5, [ax5, ax6] = plt.subplots(ncols=2, figsize=(8,4), dpi=80)
-f5 = plt.figure(figsize=(12,8), dpi=80)
+f5 = plt.figure(figsize=(9,6), dpi=80)
 gs = gridspec.GridSpec(8,3)
 
 # Main image - Signal and expansion
