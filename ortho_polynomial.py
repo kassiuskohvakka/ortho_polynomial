@@ -36,22 +36,33 @@ SHOW_MAT_ERR = args.showmaterr
 VERBOSE = args.v
 
 
+#######################################
+### DEFINE SOME FUNCTIONS
+#######################################
+
+# Used to normalize a given function arr. The parameter h gives the linear spacing between the sample points.
 def normalize(arr, h):
     return arr/np.sqrt(scipy.integrate.simps(arr*arr, dx=h))#h*np.dot(arr, arr))
 
+# A function for a nice coloring of the basis vectors based on the absolute values of the corresponding coefficients in the expansion. 
 def coeff_color(coeff):
     if np.abs(coeff)>1:
-        raise Exception('The abs. value of a coefficient was over unity. Value given:{coeff}')
+        raise Exception(f'The abs. value of a coefficient was over unity. Value given:{coeff}')
     if coeff>=0:
         return (1, 1-coeff, 1-coeff)
     else:
         return (1+coeff, 1+coeff, 1)
 
 
+########################################
+### START THE SCRIPT
+########################################
+
+# Parameters for the discretization space
 start = -1
 end = 1
 N = 1000
-h = (end-start)/(N-1)
+h = (end-start)/(N-1) # Grid spacing
 
 # Define the x-axis for the desired interval
 x = np.linspace(start, end, N)
@@ -63,16 +74,12 @@ Nbasis = 80
 # Begin with the two first basis functions
 
 qs = np.ones(N) 
-
 basis = normalize(qs, h)
 
 qs = x - scipy.integrate.simps(x*basis, dx=h)
-
 basis = np.vstack((basis, normalize(qs, h)))
 
-# print(basis)
-
-
+# ...and do the rest
 for i in range(2,Nbasis):
     
     # Initialize the next trial polynomial
@@ -88,10 +95,7 @@ for i in range(2,Nbasis):
     # still faster and accumulates less error, so that's what we should probably go with.
     
     qs = qs - scipy.integrate.simps(qs*basis[i-1], dx=h)*basis[i-1] - scipy.integrate.simps(qs*basis[i-2], dx=h)*basis[i-2]
-    
-    qs = normalize(qs, h)
-    
-    basis = np.vstack((basis, qs))
+    basis = np.vstack((basis, normalize(qs, h)))
     
 if SHOW_MAT_ERR:
     plt.matshow(np.round(h*np.dot(basis, np.transpose(basis)), 2) - np.eye(Nbasis))
