@@ -1,12 +1,11 @@
+# A quick project to study polynomial expansion of arbitrary functions. Not very heavy dependence-wise
+# but an anaconda stack is recommended.
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import collections as matcoll
 from matplotlib import animation
 import scipy.integrate
-
-
-# Set up formatting for the movie files
-writer = animation.PillowWriter(fps=15, bitrate=1800)
 
 
 ######################################
@@ -25,7 +24,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-showmaterr', type=int, default=0, help='Display orthogonality error matrix. Set -showmaterr=1 to view.')
 
 # -v - Verbose. Print all kinds of crap. ALL. KINDS.
-parser.add_argument('-v', type=int, default=0, help='Set -v=1 to for verbose output.')
+parser.add_argument('-v', type=int, default=0, help='Set -v=1 for verbose output.')
+
+# -save - Saving the animation in a .gif file
+parser.add_argument('-save', type=int, default=0, help='Set -save=1 to save the expansion animation in .gif format.')
+
+# -fps - Framerate for the potentially saved animation
+parser.add_argument('-fps', type=int, default=15, help='Set the framerate for the .gif animation. Defaults to 15.')
 
 ###############
 
@@ -34,6 +39,8 @@ args = parser.parse_args()
 
 SHOW_MAT_ERR = args.showmaterr
 VERBOSE = args.v
+SAVE = args.save
+FPS = args.fps
 
 
 #######################################
@@ -69,7 +76,6 @@ x = np.linspace(start, end, N)
 
 # The dimension of the orthonormal basis
 Nbasis = 80
-
 
 # Begin with the two first basis functions
 
@@ -112,23 +118,20 @@ np.random.seed(889)
 # Parameter for signal complexity
 Nsignal = 30
 
+# Create random parameters for the sine wave signals to be superposed
 A = np.random.uniform(5, 10, Nsignal)
 f = np.random.uniform(0, 10, Nsignal)
 p = np.random.uniform(0, 2*np.pi, Nsignal)
 
+# Construct the final signal
 signal = np.sum( A * np.sin( 2*np.pi*f * np.transpose( np.array([x for i in range(len(f))]) )+p), 1)
-
-# Debug. Plot the signal
-#f2 = plt.figure(figsize=(5,5), dpi=80)
-#plt.plot(x, signal)
-#plt.show()
 
 
 #####################################
 ### Do the coefficient expansion
 #####################################
 
-coeffs = scipy.integrate.simps(basis*signal, dx=h)#h*np.dot(basis, signal)
+coeffs = scipy.integrate.simps(basis*signal, dx=h)
 
 if VERBOSE:
     print(f'\n***\n\n Expansion coefficients : \n{coeffs}\n\n***\n')
@@ -143,32 +146,35 @@ if VERBOSE:
     print(f'max. abs. coeff : {max_abs_coeff}\n\n***\n')
 
 scaled_coeffs = coeffs/max_abs_coeff
-# print(scaled_coeffs) # Debug. Not really needed.
 
-
+# Start plotting the expansion visualizations
 f3, [ax3, ax4] = plt.subplots(nrows=1, ncols=2, figsize=(10,5), dpi=80)
 
 # Pick only the few most significant components to plot
-nof_comps = 5
+nof_comps = 5 # nof_comps=few
 comp_indices = np.argsort(np.abs(coeffs))
 
 for i in comp_indices[-nof_comps:]:
     ax3.plot(basis[i,:], color=coeff_color(scaled_coeffs[i]))
 
-
-#f4, ax4 = plt.subplots(figsize=(5,5), dpi=80)
-
 coeff_x = [i for i in range(len(coeffs))]
 
-ax4.scatter(coeff_x, coeffs)
-
-lines = []
+pos_lines = []
+neg_lines = []
 for i in range(len(coeff_x)):
-    pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
-    lines.append(pair)
+    if coeffs[i] >= 0:
+        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
+        pos_lines.append(pair)
+        ax4.scatter(coeff_x[i], coeffs[i], s=15, color='r')
+    else:
+        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
+        neg_lines.append(pair)
+        ax4.scatter(coeff_x[i], coeffs[i], s=15, color='b')
 
-linecoll = matcoll.LineCollection(lines)
-ax4.add_collection(linecoll)
+pos_linecoll = matcoll.LineCollection(pos_lines, color='r')
+neg_linecoll = matcoll.LineCollection(neg_lines, color='b')
+ax4.add_collection(pos_linecoll)
+ax4.add_collection(neg_linecoll)
 
 ax4.plot([0, coeff_x[-1]], [0, 0], color='k', linewidth=2)
 
@@ -193,7 +199,7 @@ for i, coeff in enumerate(coeffs):
 
 # Start plottting the signal and the animated expansion.
 
-f5, [ax5, ax6] = plt.subplots(ncols=2, figsize=(8,5), dpi=80)
+f5, [ax5, ax6] = plt.subplots(ncols=2, figsize=(8,4), dpi=80)
 ax5.plot(x, signal)
 
 
@@ -229,19 +235,19 @@ def animate(i, x, expansions):
     line1.set_data(x, y)
     
     line2.set_data([i,i], [0, 10000])
-    # line2 = ax6.axvline(x=i, color='r') # Did not work.
     return lines
 
 anim = animation.FuncAnimation(f5, lambda i: animate(i, x, expansions), init_func=init,
                                frames=np.size(expansions,0), interval=200, blit=True)
 
-#anim.save('basic_animation.mp4', writer=writer)
-anim.save('image.gif', writer=writer)
+
+if SAVE:
+    writer = animation.PillowWriter(fps=FPS, bitrate=1800)
+    print("Saving animation...\n")
+    anim.save('image.gif', writer=writer)
 
 
 plt.show(block=False)
-
-
 
 
 # Exit in a controlled manner
