@@ -2,9 +2,10 @@
 # but an anaconda stack is recommended.
 
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import collections as matcoll
-from matplotlib import animation
+from matplotlib import animation, rc
 import matplotlib.gridspec as gridspec
 import scipy.integrate
 
@@ -60,6 +61,17 @@ def coeff_color(coeff):
         return (1, 1-coeff, 1-coeff)
     else:
         return (1+coeff, 1+coeff, 1)
+        
+def mpl_settings( axlabelsize=12, ticksize=8):
+    rc('font', **{'family' : 'serif'})
+    rc('text', usetex=True)
+
+    matplotlib.rcParams.update({'font.size' : ticksize})
+    matplotlib.rcParams.update({'axes.labelsize' : axlabelsize})
+    matplotlib.rcParams.update({'xtick.labelsize' : ticksize})
+    matplotlib.rcParams.update({'ytick.labelsize' : ticksize})
+    matplotlib.rcParams.update({'legend.fontsize' : ticksize})
+    matplotlib.rcParams.update({'lines.linewidth' : 2})
 
 
 ########################################
@@ -203,24 +215,26 @@ for i, coeff in enumerate(coeffs):
 
 # Start plottting the signal and the animated expansion.
 
+mpl_settings(12,12)
+
 #f5, [ax5, ax6] = plt.subplots(ncols=2, figsize=(8,4), dpi=80)
 f5 = plt.figure(figsize=(12,8), dpi=80)
-gs = gridspec.GridSpec(3,3)
+gs = gridspec.GridSpec(8,3)
 
 # Main image - Signal and expansion
 ax5 = f5.add_subplot(gs[:, 0:2])
 
 ax5.set_title("Signal and expansion")
-ax5.set_xlabel("x")
+ax5.set_xlabel("$x$")
 ax5.plot(x, signal)
 
 
 
 # Small image 1 - Error in the expansion
-ax6 = f5.add_subplot(gs[0, 2])
+ax6 = f5.add_subplot(gs[0:2, 2])
 
 ax6.set_title("Error in the expansion")
-ax6.set_xlabel("Dimension of expansion basis")
+ax6.set_xlabel("Dimension of the expansion basis")
 
 errors = []
 
@@ -230,7 +244,9 @@ ax6.semilogy(coeff_x, errors)
 
 
 # Small image 2 - Coefficients
-ax7 = f5.add_subplot(gs[1, 2])
+ax7 = f5.add_subplot(gs[3:5, 2])
+ax7.set_title("Coefficient expansion")
+ax7.set_xlabel("Degree of component polynomial")
 
 pos_lines = []
 neg_lines = []
@@ -254,9 +270,13 @@ ax7.plot([0, coeff_x[-1]], [0, 0], color='k', linewidth=2)
 
 
 # Small image 3 - Basis functions
-ax8 = f5.add_subplot(gs[2, 2])
 
 nof_comps = 5 # nof_comps=few
+
+ax8 = f5.add_subplot(gs[6:, 2])
+ax8.set_title(f"{nof_comps} largest-coeff. basis functions")
+ax8.set_xlabel("$x$")
+
 comp_indices = np.argsort(np.abs(coeffs))
 
 for i in comp_indices[-nof_comps:]:
@@ -287,6 +307,8 @@ def animate(i, x, expansions):
 
 anim = animation.FuncAnimation(f5, lambda i: animate(i, x, expansions), init_func=init,
                                frames=4*np.size(expansions,0), interval=200, blit=True)
+
+f5.align_labels()
 
 
 if SAVE:
