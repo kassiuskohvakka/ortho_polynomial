@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import collections as matcoll
 from matplotlib import animation
+import matplotlib.gridspec as gridspec
 import scipy.integrate
 
 
@@ -147,40 +148,43 @@ if VERBOSE:
 
 scaled_coeffs = coeffs/max_abs_coeff
 
-# Start plotting the expansion visualizations
-f3, [ax3, ax4] = plt.subplots(nrows=1, ncols=2, figsize=(10,5), dpi=80)
-
-# Pick only the few most significant components to plot
-nof_comps = 5 # nof_comps=few
-comp_indices = np.argsort(np.abs(coeffs))
-
-for i in comp_indices[-nof_comps:]:
-    ax3.plot(basis[i,:], color=coeff_color(scaled_coeffs[i]))
-
+# Numbers of expansion components
 coeff_x = [i for i in range(len(coeffs))]
 
-pos_lines = []
-neg_lines = []
-for i in range(len(coeff_x)):
-    if coeffs[i] >= 0:
-        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
-        pos_lines.append(pair)
-        ax4.scatter(coeff_x[i], coeffs[i], s=15, color='r')
-    else:
-        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
-        neg_lines.append(pair)
-        ax4.scatter(coeff_x[i], coeffs[i], s=15, color='b')
+# Start plotting the expansion visualizations
+#f3, [ax3, ax4] = plt.subplots(nrows=1, ncols=2, figsize=(10,5), dpi=80)
 
-pos_linecoll = matcoll.LineCollection(pos_lines, color='r')
-neg_linecoll = matcoll.LineCollection(neg_lines, color='b')
-ax4.add_collection(pos_linecoll)
-ax4.add_collection(neg_linecoll)
+# Pick only the few most significant components to plot
+#nof_comps = 5 # nof_comps=few
+#comp_indices = np.argsort(np.abs(coeffs))
 
-ax4.plot([0, coeff_x[-1]], [0, 0], color='k', linewidth=2)
+#for i in comp_indices[-nof_comps:]:
+#    ax3.plot(basis[i,:], color=coeff_color(scaled_coeffs[i]))
+
+#coeff_x = [i for i in range(len(coeffs))]
+
+#pos_lines = []
+#neg_lines = []
+#for i in range(len(coeff_x)):
+#    if coeffs[i] >= 0:
+#        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
+#        pos_lines.append(pair)
+#        ax4.scatter(coeff_x[i], coeffs[i], s=15, color='r')
+#    else:
+#        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
+#        neg_lines.append(pair)
+#        ax4.scatter(coeff_x[i], coeffs[i], s=15, color='b')
+
+#pos_linecoll = matcoll.LineCollection(pos_lines, color='r')
+#neg_linecoll = matcoll.LineCollection(neg_lines, color='b')
+#ax4.add_collection(pos_linecoll)
+#ax4.add_collection(neg_linecoll)
+
+#ax4.plot([0, coeff_x[-1]], [0, 0], color='k', linewidth=2)
 
 # plt.show()
 
-f3.savefig('testi.pdf')
+# f3.savefig('testi.pdf')
 
 #######################################
 ### Plot the signal and the expansion
@@ -199,24 +203,68 @@ for i, coeff in enumerate(coeffs):
 
 # Start plottting the signal and the animated expansion.
 
-f5, [ax5, ax6] = plt.subplots(ncols=2, figsize=(8,4), dpi=80)
+#f5, [ax5, ax6] = plt.subplots(ncols=2, figsize=(8,4), dpi=80)
+f5 = plt.figure(figsize=(12,8), dpi=80)
+gs = gridspec.GridSpec(3,3)
+
+# Main image - Signal and expansion
+ax5 = f5.add_subplot(gs[:, 0:2])
+
+ax5.set_title("Signal and expansion")
+ax5.set_xlabel("x")
 ax5.plot(x, signal)
 
 
-ax5.set_title("Signal and expansion")
-ax4.set_xlabel("x")
 
+# Small image 1 - Error in the expansion
+ax6 = f5.add_subplot(gs[0, 2])
 
 ax6.set_title("Error in the expansion")
 ax6.set_xlabel("Dimension of expansion basis")
 
-
-# Side plot for the errors with a moving cursor
 errors = []
 
 for i in range(np.size(expansions, 0)):
     errors.append( scipy.integrate.simps( (signal - expansions[i,:])**2, dx=h) )
 ax6.semilogy(coeff_x, errors)
+
+
+# Small image 2 - Coefficients
+ax7 = f5.add_subplot(gs[1, 2])
+
+pos_lines = []
+neg_lines = []
+for i in range(len(coeff_x)):
+    if coeffs[i] >= 0:
+        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
+        pos_lines.append(pair)
+        ax7.scatter(coeff_x[i], coeffs[i], s=15, color='r')
+    else:
+        pair=[(coeff_x[i],0), (coeff_x[i], coeffs[i])]
+        neg_lines.append(pair)
+        ax7.scatter(coeff_x[i], coeffs[i], s=15, color='b')
+
+pos_linecoll = matcoll.LineCollection(pos_lines, color='r')
+neg_linecoll = matcoll.LineCollection(neg_lines, color='b')
+ax7.add_collection(pos_linecoll)
+ax7.add_collection(neg_linecoll)
+
+ax7.plot([0, coeff_x[-1]], [0, 0], color='k', linewidth=2)
+
+
+
+# Small image 3 - Basis functions
+ax8 = f5.add_subplot(gs[2, 2])
+
+nof_comps = 5 # nof_comps=few
+comp_indices = np.argsort(np.abs(coeffs))
+
+for i in comp_indices[-nof_comps:]:
+    ax8.plot(basis[i,:], color=coeff_color(scaled_coeffs[i]))
+
+
+
+# The animated stuff
 
 line1, = ax5.plot([], [], lw=2, color='r')
 line2 = ax6.axvline(x=1, color='r')#plot([], [], lw=2, color='r')
@@ -231,14 +279,14 @@ def init():
 
 # animation function.  This is called sequentially
 def animate(i, x, expansions):
-    y = expansions[i,:]
+    y = expansions[i//4,:]
     line1.set_data(x, y)
     
-    line2.set_data([i,i], [0, 10000])
+    line2.set_data([i/4,i/4], [0, 10000])
     return lines
 
 anim = animation.FuncAnimation(f5, lambda i: animate(i, x, expansions), init_func=init,
-                               frames=np.size(expansions,0), interval=200, blit=True)
+                               frames=4*np.size(expansions,0), interval=200, blit=True)
 
 
 if SAVE:
