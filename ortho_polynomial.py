@@ -280,7 +280,7 @@ ax8.set_xlabel("$x$")
 comp_indices = np.argsort(np.abs(coeffs))
 
 for i in comp_indices[-nof_comps:]:
-    ax8.plot(basis[i,:], color=coeff_color(scaled_coeffs[i]))
+    ax8.plot(x, basis[i,:], color=coeff_color(scaled_coeffs[i]))
 
 
 
